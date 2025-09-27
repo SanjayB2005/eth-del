@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useServerFiles, useServerFileUpload } from '../../hooks/useServerFiles';
 import { useAuth } from '../../hooks/useAuth';
 import { FileRecord } from '../../lib/serverAPI';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 interface ServerFileManagerProps {
   reportId?: string;
@@ -11,7 +12,9 @@ interface ServerFileManagerProps {
 }
 
 export default function ServerFileManager({ reportId, caseId }: ServerFileManagerProps) {
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
+  const {primaryWallet} = useDynamicContext();
+  const isAuthenticated = !!primaryWallet;
   const { files, pagination, isLoading, error, loadFiles, refreshFiles } = useServerFiles();
   const { retryMigration, deleteFile } = useServerFileUpload();
   

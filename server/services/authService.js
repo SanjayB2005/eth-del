@@ -142,14 +142,31 @@ class AuthService {
   }
 
   /**
-   * Middleware to protect routes
+   * Middleware to protect routes (supports both JWT and wallet address authentication)
    */
   authenticateToken(req, res, next) {
+    // Check for wallet address in header (new Dynamic SDK approach)
+    const walletAddress = req.headers['x-wallet-address'];
+    
+    if (walletAddress) {
+      // Use wallet address authentication
+      this.verifyWalletAddress(walletAddress)
+        .then(user => {
+          req.user = user;
+          next();
+        })
+        .catch(error => {
+          res.status(403).json({ error: error.message });
+        });
+      return;
+    }
+    
+    // Fallback to JWT token authentication
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
     
     if (!token) {
-      return res.status(401).json({ error: 'Access token required' });
+      return res.status(401).json({ error: 'Access token or wallet address required' });
     }
     
     this.verifyToken(token)
@@ -160,6 +177,48 @@ class AuthService {
       .catch(error => {
         res.status(403).json({ error: error.message });
       });
+  }
+
+  /**
+   * Verify wallet address and return user data (for Dynamic SDK authentication)
+   */
+  async verifyWalletAddress(walletAddress) {
+    try {
+      const normalizedAddress = walletAddress.toLowerCase();
+      
+      // Get user data from database
+      const user = await User.findOne({ 
+        walletAddress: normalizedAddress,
+        isVerified: true 
+      });
+      
+      if (!user) {
+        // Create user if not exists (for Dynamic SDK flow)
+        const newUser = await User.create({
+          walletAddress: normalizedAddress,
+          nonce: this.generateNonce(),
+          isVerified: true, // Dynamic SDK handles verification
+          role: 'victim' // Default role
+        });
+        
+        return {
+          userId: newUser._id,
+          walletAddress: newUser.walletAddress,
+          role: newUser.role,
+          isVerified: newUser.isVerified
+        };
+      }
+      
+      return {
+        userId: user._id,
+        walletAddress: user.walletAddress,
+        role: user.role,
+        isVerified: user.isVerified
+      };
+    } catch (error) {
+      console.error('Wallet address verification failed:', error);
+      throw new Error(`Wallet authentication failed: ${error.message}`);
+    }
   }
 
   /**

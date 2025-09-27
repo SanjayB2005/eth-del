@@ -4,7 +4,6 @@ import VictimLayout from '@/components/VictimDashboard/VictimLayout'
 import ServerEvidenceUpload from '@/components/VictimDashboard/ServerEvidenceUpload'
 import ServerFileManager from '@/components/VictimDashboard/ServerFileManager'
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
@@ -50,7 +49,7 @@ export default function StoragePage() {
   };
 
   const handleUploadError = (error: string) => {
-    console.error('Upload error:', error);
+        console.error('Upload error:', error);
   };
 
   // Show loading state while authentication is initializing

@@ -28,8 +28,13 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://localhost:3030',  // Add support for port 3030
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3030',  // Add support for 127.0.0.1:3030
     'http://localhost:3001',
-    'http://localhost:3002'
+    'http://127.0.0.1:3001',
+    'http://localhost:3002',
+    'http://127.0.0.1:3002'
   ],
   credentials: true
 }));

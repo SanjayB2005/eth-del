@@ -2,13 +2,15 @@
 
 import React from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, logout } = useAuth();
+  // const { user, logout } = useAuth();
+  const {user, primaryWallet, handleLogOut} = useDynamicContext();
 
   const getShortAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -50,30 +52,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </svg>
               <span className="text-sm font-medium">Export</span>
             </button>
-            {user && (
+            {primaryWallet && (
               <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm font-mono text-gray-700">
-                  {getShortAddress(user.walletAddress)}
+                  {getShortAddress(primaryWallet.address)}
                 </span>
               </div>
             )}
             <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
+                  {/* <span className="text-white text-sm font-medium">
                     {user?.role === 'police' ? 'P' : 'U'}
-                  </span>
+                  </span> */}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  {/* <p className="text-sm font-medium text-gray-900">
                     {user?.role === 'police' ? 'Police Officer' : 'User'}
-                  </p>
-                  <p className="text-xs text-gray-500">Role: {user?.role}</p>
+                  </p> */}
+                  {/* <p className="text-xs text-gray-500">Role: {user?.role}</p> */}
                 </div>
               </div>
               <button 
-                onClick={logout}
+                onClick={() => {handleLogOut}}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

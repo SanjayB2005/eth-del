@@ -4,13 +4,15 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import AuthDebugger from '@/lib/authDebugger'
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core'
 
 interface VictimLayoutProps {
   children: React.ReactNode
 }
 
 export default function VictimLayout({ children }: VictimLayoutProps) {
-  const { user, logout } = useAuth();
+  // const { user, logout } = useAuth();
+  const {user, primaryWallet, handleLogOut} = useDynamicContext();
   const [showDebug, setShowDebug] = useState(false);
 
   const getShortAddress = (address: string) => {
@@ -41,11 +43,11 @@ export default function VictimLayout({ children }: VictimLayoutProps) {
           </div>
           
           <div className="flex items-center space-x-3">
-            {user && (
+            {user && primaryWallet && (
               <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm font-mono text-gray-700">
-                  {getShortAddress(user.walletAddress)}
+                  {getShortAddress(primaryWallet?.address)}
                 </span>
               </div>
             )}
@@ -56,7 +58,7 @@ export default function VictimLayout({ children }: VictimLayoutProps) {
               <span className="text-sm font-medium">Get Help Now</span>
             </button>
             <button 
-              onClick={logout}
+              onClick={() => {handleLogOut}}
               className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

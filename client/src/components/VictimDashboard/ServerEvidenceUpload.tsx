@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useServerFileUpload, UploadProgress } from '../../hooks/useServerFiles';
 import { useAuth } from '../../hooks/useAuth';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 interface ServerEvidenceUploadProps {
   reportId?: string;
@@ -19,7 +20,8 @@ export default function ServerEvidenceUpload({
   onUploadComplete,
   onUploadError
 }: ServerEvidenceUploadProps) {
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
+  const {primaryWallet} = useDynamicContext();
   const { uploadFile, isUploading, uploadProgress, error, clearError } = useServerFileUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -29,7 +31,7 @@ export default function ServerEvidenceUpload({
   const [newTag, setNewTag] = useState('');
 
   const handleFileSelect = (files: FileList | null) => {
-    if (!files || files.length === 0 || !isAuthenticated) return;
+    if (!files || files.length === 0 || !primaryWallet) return;
     
     const file = files[0];
     handleUpload(file);
@@ -103,7 +105,7 @@ export default function ServerEvidenceUpload({
     }
   };
 
-  if (!isAuthenticated) {
+  if (!primaryWallet) {
     return (
       <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
         <h3 className="text-lg font-semibold text-yellow-800 mb-2">Authentication Required</h3>

@@ -2,16 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWallet } from '@/hooks/useWallet';
-import { useAuth } from '@/hooks/useAuth';
 import WalletConnectionGuide from '@/components/WalletConnectionGuide';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { QueryClient } from '@tanstack/react-query';
 
 export default function Home() {
-  const [error, setError] = useState<string | null>(null);
-
-
-
   const { primaryWallet, user } = useDynamicContext();
   const router = useRouter();
   const isAuthenticated = !!primaryWallet;

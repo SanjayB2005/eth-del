@@ -4,7 +4,8 @@ import { Readable } from 'stream';
 
 class PinataService {
   constructor() {
-    this.pinata = null;
+    this.uploadPinata = null;
+    this.downloadPinata = null;
     this.initialized = false;
   }
 
@@ -12,23 +13,51 @@ class PinataService {
     if (this.initialized) return;
 
     try {
-      // Validate environment variables
-      const apiKey = process.env.PINATA_API_KEY;
-      const secretKey = process.env.PINATA_SECRET_KEY;
-      const jwt = process.env.PINATA_JWT;
+      // Check for dual key configuration first
+      const uploadJwt = process.env.PINATA_UPLOAD_JWT;
+      const downloadJwt = process.env.PINATA_DOWNLOAD_JWT;
+      
+      if (uploadJwt && downloadJwt) {
+        // Use dual key configuration
+        console.log('🔑 Using dual-key Pinata configuration');
+        
+        // Initialize upload client (V3 Write permissions)
+        this.uploadPinata = new PinataSDK({
+          pinataJwt: uploadJwt,
+          pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud'
+        });
 
-      if (!apiKey || !secretKey || !jwt) {
-        throw new Error('Missing Pinata credentials. Please set PINATA_API_KEY, PINATA_SECRET_KEY, and PINATA_JWT in environment variables.');
+        // Initialize download client (V3 Read permissions)
+        this.downloadPinata = new PinataSDK({
+          pinataJwt: downloadJwt,
+          pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud'
+        });
+
+        // Test both connections
+        await this.testUploadConnection();
+        await this.testDownloadConnection();
+        
+      } else {
+        // Fallback to legacy single key configuration
+        console.log('🔑 Using legacy single-key Pinata configuration');
+        const apiKey = process.env.PINATA_API_KEY;
+        const secretKey = process.env.PINATA_SECRET_KEY;
+        const jwt = process.env.PINATA_JWT;
+
+        if (!apiKey || !secretKey || !jwt) {
+          throw new Error('Missing Pinata credentials. Please set either dual keys (PINATA_UPLOAD_JWT, PINATA_DOWNLOAD_JWT) or legacy keys (PINATA_API_KEY, PINATA_SECRET_KEY, PINATA_JWT).');
+        }
+
+        // Initialize single client for both operations
+        this.uploadPinata = new PinataSDK({
+          pinataJwt: jwt,
+          pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud'
+        });
+        this.downloadPinata = this.uploadPinata; // Same client for both
+
+        // Test the connection
+        await this.testUploadConnection();
       }
-
-      // Initialize Pinata SDK
-      this.pinata = new PinataSDK({
-        pinataJwt: jwt,
-        pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud'
-      });
-
-      // Test the connection
-      await this.testConnection();
       
       this.initialized = true;
       console.log('✅ Pinata service initialized successfully');
@@ -38,14 +67,26 @@ class PinataService {
     }
   }
 
-  async testConnection() {
+  async testUploadConnection() {
     try {
-      // Test with a simple API call
-      const testData = await this.pinata.testAuthentication();
-      console.log('Pinata authentication test passed:', testData.authenticated);
+      const testData = await this.uploadPinata.testAuthentication();
+      console.log('Pinata upload authentication test passed:', testData.authenticated);
       return testData.authenticated;
     } catch (error) {
-      throw new Error(`Pinata connection test failed: ${error.message}`);
+      throw new Error(`Pinata upload connection test failed: ${error.message}`);
+    }
+  }
+
+  async testDownloadConnection() {
+    try {
+      if (this.downloadPinata !== this.uploadPinata) {
+        const testData = await this.downloadPinata.testAuthentication();
+        console.log('Pinata download authentication test passed:', testData.authenticated);
+        return testData.authenticated;
+      }
+      return true; // Same client, already tested
+    } catch (error) {
+      throw new Error(`Pinata download connection test failed: ${error.message}`);
     }
   }
 
@@ -75,20 +116,32 @@ class PinataService {
         }
       };
 
-      // Upload to Pinata using correct v2.5.0 API
-      // Create a File object for upload (works in Node.js 18+)
-      const file = new File([fileBuffer], originalName, { type: 'application/octet-stream' });
+            // Upload to Pinata using upload client (V3 Write permissions)
+      // Use direct API call with upload JWT (V3 Write permissions)
+      const formData = new FormData();
+      formData.append('file', new Blob([fileBuffer]), originalName);
+      formData.append('pinataMetadata', JSON.stringify(pinataMetadata));
       
-      const uploadResult = await this.pinata.upload.public.file(file, {
-        metadata: pinataMetadata
+      const uploadJwt = process.env.PINATA_UPLOAD_JWT;
+      const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${uploadJwt}`
+        },
+        body: formData
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
 
+      const uploadResult = await response.json();
 
       return {
-        pinataCid: uploadResult.cid,
-        pinSize: uploadResult.size,
-        timestamp: uploadResult.created_at,
+        pinataCid: uploadResult.IpfsHash,
+        pinSize: uploadResult.PinSize,
+        timestamp: uploadResult.Timestamp || new Date().toISOString(),
         fileHash,
         isDuplicate: uploadResult.is_duplicate || false
       };
@@ -141,7 +194,14 @@ class PinataService {
     }
 
     try {
-      const response = await fetch(`https://${process.env.PINATA_GATEWAY}/ipfs/${pinataCid}`);
+      // Try public IPFS gateway first (no auth needed)
+      let response = await fetch(`https://gateway.pinata.cloud/ipfs/${pinataCid}`);
+      
+      if (!response.ok) {
+        // Fallback to other public gateways
+        console.log(`Primary gateway failed (${response.status}), trying fallback...`);
+        response = await fetch(`https://ipfs.io/ipfs/${pinataCid}`);
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

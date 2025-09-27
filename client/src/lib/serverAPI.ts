@@ -1,6 +1,5 @@
 // API client for server communication
 export interface AuthResponse {
-  token: string;
   user: {
     id: string;
     walletAddress: string;
@@ -68,87 +67,42 @@ export interface FileStatusResponse {
   };
 }
 
+// ServerAPI class integrated with Dynamic SDK for wallet-based authentication
+// No tokens are stored - authentication is handled by passing wallet addresses
+// Usage: Import useDynamicContext and pass primaryWallet.address to methods
 class ServerAPI {
   private baseUrl: string;
-  private token: string | null = null;
-  private readonly TOKEN_KEY = 'eth_del_auth_token';
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3002';
-    // Initialize token from localStorage on startup
-    this.initializeToken();
+    this.baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
   }
 
-  private initializeToken() {
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem(this.TOKEN_KEY);
-      if (storedToken) {
-        console.log('🔄 Initializing token from localStorage');
-        this.token = storedToken;
-      }
-    }
-  }
-
-  setToken(token: string) {
-    console.log('🔑 Setting authentication token:', !!token);
-    this.token = token;
-    // Persist token to localStorage for persistence across refreshes
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(this.TOKEN_KEY, token);
-    }
-  }
-
-  getToken(): string | null {
-    // If token is not in memory, try to get it from localStorage
-    if (!this.token && typeof window !== 'undefined') {
-      this.token = localStorage.getItem(this.TOKEN_KEY);
-    }
-    console.log('🔍 Getting token, exists:', !!this.token, 'length:', this.token?.length);
-    return this.token;
-  }
-
-  clearToken() {
-    console.log('🧹 Clearing authentication token');
-    this.token = null;
-    // Clear from localStorage as well
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(this.TOKEN_KEY);
-    }
-  }
-
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    const hasToken = !!this.token;
-    console.log('🔒 Authentication check - has token:', hasToken);
-    return hasToken;
-  }
-
-  private async fetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const token = this.getToken();
-    
+  // Helper method to create authenticated headers with wallet address
+  private createAuthHeaders(walletAddress?: string): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers as Record<string, string>,
     };
     
-    if (token && !headers.Authorization) {
-      headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Adding Authorization header with token to request:', endpoint);
-    } else if (!token) {
-      console.warn('⚠️ No token available for authenticated request to:', endpoint);
+    if (walletAddress) {
+      // Use wallet address for authentication instead of token
+      headers['X-Wallet-Address'] = walletAddress;
     }
+    
+    return headers;
+  }
+
+  private async fetch(endpoint: string, options: RequestInit = {}, walletAddress?: string): Promise<Response> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const headers: Record<string, string> = {
+      ...this.createAuthHeaders(walletAddress),
+      ...options.headers as Record<string, string>,
+    };
     
     const response = await fetch(url, {
       ...options,
       headers,
     });
-    
-    // Handle auth errors
-    if (response.status === 401 || response.status === 403) {
-      this.clearToken();
-      // Don't redirect - let the component handle the authentication state
-    }
     
     return response;
   }
@@ -175,12 +129,11 @@ class ServerAPI {
     }
     
     const result = await response.json();
-    this.setToken(result.token);
     return result;
   }
 
-  async getProfile(): Promise<AuthResponse['user']> {
-    const response = await this.fetch('/api/auth/profile');
+  async getProfile(walletAddress: string): Promise<AuthResponse['user']> {
+    const response = await this.fetch('/api/auth/profile', {}, walletAddress);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to get profile');
@@ -188,8 +141,8 @@ class ServerAPI {
     return response.json();
   }
 
-  async verifyToken(): Promise<{ valid: boolean; user: AuthResponse['user'] }> {
-    const response = await this.fetch('/api/auth/verify-token');
+  async verifyToken(walletAddress: string): Promise<{ valid: boolean; user: AuthResponse['user'] }> {
+    const response = await this.fetch('/api/auth/verify-token', {}, walletAddress);
     if (!response.ok) {
       return { valid: false, user: null as any };
     }
@@ -219,10 +172,8 @@ class ServerAPI {
   }
 
   // File upload methods
-  async uploadFile(file: File, metadata: Record<string, any> = {}): Promise<FileUploadResponse> {
-    // Check if we have a token before making the request
-    const token = this.getToken();
-    if (!token) {
+  async uploadFile(file: File, walletAddress: string, metadata: Record<string, any> = {}): Promise<FileUploadResponse> {
+    if (!walletAddress) {
       throw new Error('Authentication required. Please connect your wallet first.');
     }
     
@@ -230,14 +181,13 @@ class ServerAPI {
     formData.append('file', file);
     formData.append('metadata', JSON.stringify(metadata));
     
-    // Use direct fetch for FormData uploads
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    // Use direct fetch for FormData uploads with wallet address authentication
+    const headers: Record<string, string> = {
+      'X-Wallet-Address': walletAddress,
+    };
     // Don't set Content-Type for FormData - let browser set it with boundary
     
-    console.log('📤 Making uploadFile request with token:', !!token);
+    console.log('📤 Making uploadFile request with Dynamic SDK authentication');
     const response = await fetch(`${this.baseUrl}/api/upload`, {
       method: 'POST',
       headers,
@@ -252,7 +202,7 @@ class ServerAPI {
     return response.json();
   }
 
-  async getFiles(options: {
+  async getFiles(walletAddress: string, options: {
     page?: number;
     limit?: number;
     status?: string;
@@ -267,19 +217,13 @@ class ServerAPI {
       pages: number;
     };
   }> {
-    // Check if we have a token before making the request
-    const token = this.getToken();
-    if (!token) {
-      throw new Error('Authentication required. Please connect your wallet first.');
-    }
-    
     const params = new URLSearchParams();
     Object.entries(options).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());
     });
     
-    console.log('🔍 Making getFiles request with token:', !!token);
-    const response = await this.fetch(`/api/upload/files?${params}`);
+    console.log('🔍 Making getFiles request with Dynamic SDK authentication');
+    const response = await this.fetch(`/api/upload/files?${params}`, {}, walletAddress);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to get files');
@@ -287,10 +231,10 @@ class ServerAPI {
     return response.json();
   }
 
-  async retryMigration(fileId: string): Promise<{ message: string; fileId: string; status: string }> {
+  async retryMigration(fileId: string, walletAddress?: string): Promise<{ message: string; fileId: string; status: string }> {
     const response = await this.fetch(`/api/upload/retry/${fileId}`, {
       method: 'POST',
-    });
+    }, walletAddress);
     
     if (!response.ok) {
       const error = await response.json();
@@ -300,10 +244,10 @@ class ServerAPI {
     return response.json();
   }
 
-  async deleteFile(fileId: string): Promise<{ message: string; fileId: string; status: string }> {
+  async deleteFile(fileId: string, walletAddress?: string): Promise<{ message: string; fileId: string; status: string }> {
     const response = await this.fetch(`/api/upload/${fileId}`, {
       method: 'DELETE',
-    });
+    }, walletAddress);
     
     if (!response.ok) {
       const error = await response.json();
@@ -383,6 +327,32 @@ class ServerAPI {
     return response.json();
   }
 }
+
+// Helper function to create an authenticated ServerAPI instance with Dynamic SDK
+// Usage: const api = createAuthenticatedAPI(primaryWallet?.address);
+export const createAuthenticatedAPI = (walletAddress?: string) => {
+  return {
+    ...serverAPI,
+    // Wrap methods that require authentication with wallet address
+    uploadFile: (file: File, metadata: Record<string, any> = {}) => 
+      serverAPI.uploadFile(file, walletAddress!, metadata),
+    getFiles: (options?: Parameters<typeof serverAPI.getFiles>[1]) => 
+      serverAPI.getFiles(walletAddress!, options),
+    getProfile: () => serverAPI.getProfile(walletAddress!),
+    verifyToken: () => serverAPI.verifyToken(walletAddress!),
+    retryMigration: (fileId: string) => serverAPI.retryMigration(fileId, walletAddress),
+    deleteFile: (fileId: string) => serverAPI.deleteFile(fileId, walletAddress),
+    // Keep non-authenticated methods as-is
+    getNonce: serverAPI.getNonce.bind(serverAPI),
+    verifySignature: serverAPI.verifySignature.bind(serverAPI),
+    checkWalletConnectivity: serverAPI.checkWalletConnectivity.bind(serverAPI),
+    getFileStatus: serverAPI.getFileStatus.bind(serverAPI),
+    getFileStatusByPinataCid: serverAPI.getFileStatusByPinataCid.bind(serverAPI),
+    getSummary: serverAPI.getSummary.bind(serverAPI),
+    setupPayments: serverAPI.setupPayments.bind(serverAPI),
+    getHealth: serverAPI.getHealth.bind(serverAPI),
+  };
+};
 
 // Export singleton instance
 export const serverAPI = new ServerAPI();

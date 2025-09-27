@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { serverAPI, FileUploadResponse, FileRecord } from '../lib/serverAPI';
 
 export interface UploadProgress {
@@ -8,6 +9,7 @@ export interface UploadProgress {
 }
 
 export const useServerFileUpload = () => {
+  const { primaryWallet } = useDynamicContext();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +20,10 @@ export const useServerFileUpload = () => {
     onProgress?: (progress: UploadProgress) => void
   ): Promise<FileUploadResponse | null> => {
     try {
+      if (!primaryWallet?.address) {
+        throw new Error('Wallet not connected. Please connect your wallet first.');
+      }
+
       setIsUploading(true);
       setError(null);
       
@@ -39,8 +45,8 @@ export const useServerFileUpload = () => {
       setUploadProgress(uploadingProgress);
       onProgress?.(uploadingProgress);
 
-      // Upload to server
-      const result = await serverAPI.uploadFile(file, metadata);
+      // Upload to server with wallet address
+      const result = await serverAPI.uploadFile(file, primaryWallet.address, metadata);
 
       // Processing stage
       const processingProgress: UploadProgress = {
@@ -77,31 +83,31 @@ export const useServerFileUpload = () => {
     } finally {
       setIsUploading(false);
     }
-  }, []);
+  }, [primaryWallet?.address]);
 
   const retryMigration = useCallback(async (fileId: string): Promise<boolean> => {
     try {
       setError(null);
-      await serverAPI.retryMigration(fileId);
+      await serverAPI.retryMigration(fileId, primaryWallet?.address);
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Retry failed';
       setError(errorMessage);
       return false;
     }
-  }, []);
+  }, [primaryWallet?.address]);
 
   const deleteFile = useCallback(async (fileId: string): Promise<boolean> => {
     try {
       setError(null);
-      await serverAPI.deleteFile(fileId);
+      await serverAPI.deleteFile(fileId, primaryWallet?.address);
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Delete failed';
       setError(errorMessage);
       return false;
     }
-  }, []);
+  }, [primaryWallet?.address]);
 
   return {
     uploadFile,
@@ -115,6 +121,7 @@ export const useServerFileUpload = () => {
 };
 
 export const useServerFiles = () => {
+  const { primaryWallet } = useDynamicContext();
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,10 +140,14 @@ export const useServerFiles = () => {
     caseId?: string;
   } = {}) => {
     try {
+      if (!primaryWallet?.address) {
+        throw new Error('Wallet not connected. Please connect your wallet first.');
+      }
+
       setIsLoading(true);
       setError(null);
       
-      const result = await serverAPI.getFiles(options);
+      const result = await serverAPI.getFiles(primaryWallet.address, options);
       setFiles(result.files);
       setPagination(result.pagination);
     } catch (error) {
@@ -145,7 +156,7 @@ export const useServerFiles = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [primaryWallet?.address]);
 
   const refreshFiles = useCallback(() => {
     return loadFiles();
