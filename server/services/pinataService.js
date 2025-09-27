@@ -1,5 +1,6 @@
 import { PinataSDK } from 'pinata';
 import crypto from 'crypto';
+import { Readable } from 'stream';
 
 class PinataService {
   constructor() {
@@ -74,15 +75,21 @@ class PinataService {
         }
       };
 
-      // Upload to Pinata
-      const uploadResult = await this.pinata.upload
-        .buffer(fileBuffer)
-        .addMetadata(pinataMetadata);
+      // Upload to Pinata using correct v2.5.0 API
+      // Create a File object for upload (works in Node.js 18+)
+      const file = new File([fileBuffer], originalName, { type: 'application/octet-stream' });
+      
+      const uploadResult = await this.pinata.upload.public.file(file, {
+        metadata: pinataMetadata
+      });
+
+      // Log the actual response to understand the structure
+      console.log('Raw upload result:', uploadResult);
 
       return {
-        pinataCid: uploadResult.IpfsHash,
-        pinSize: uploadResult.PinSize,
-        timestamp: uploadResult.Timestamp,
+        pinataCid: uploadResult.IpfsHash || uploadResult.cid || uploadResult.hash,
+        pinSize: uploadResult.PinSize || uploadResult.size,
+        timestamp: uploadResult.Timestamp || uploadResult.timestamp || new Date().toISOString(),
         fileHash,
         isDuplicate: uploadResult.isDuplicate || false
       };
