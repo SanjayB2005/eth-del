@@ -1,0 +1,57 @@
+{
+  "cases": [
+    {
+      "id": "2024-001",
+      "caseNumber": "2024-001",
+      "title": "Anonymous Harassment Report",
+      "type": "Harassment",
+      "status": "under_investigation",
+      "priority": "high",
+      "dateReported": "2024-03-15",
+      "assignedOfficer": "Detective Johnson",
+      "description": "Anonymous report of ongoing harassment with digital evidence provided",
+      "evidence": [
+        {
+          "id": "1",
+          "type": "photo",
+          "name": "incident_evidence.jpg",
+          "uploadDate": "2024-03-15",
+          "status": "verified",
+          "size": "2.4 MB",
+          "uploadedBy": "Anonymous User"
+        },
+        {
+          "id": "2",
+          "type": "document",
+          "name": "witness_statement.pdf",
+          "uploadDate": "2024-03-14",
+          "status": "pending",
+          "size": "1.2 MB",
+          "uploadedBy": "Anonymous User"
+        }
+      ]
+    },
+    {
+      "id": "2024-002",
+      "caseNumber": "2024-002",
+      "title": "Workplace Discrimination Case",
+      "type": "Discrimination",
+      "status": "active",
+      "priority": "medium",
+      "dateReported": "2024-03-10",
+      "assignedOfficer": "Officer Smith",
+      "description": "Workplace discrimination complaint with witness statements",
+      "evidence": [
+        {
+          "id": "1",
+          "type": "document",
+          "name": "complaint_form.pdf",
+          "uploadDate": "2024-03-10",
+          "status": "verified",
+          "size": "1.8 MB",
+          "uploadedBy": "Complainant"
+        }
+      ]
+    }
+  ]
+}

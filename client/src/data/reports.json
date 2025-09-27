@@ -1,0 +1,73 @@
+[
+  {
+    "id": "RPT-2024-001",
+    "title": "Online Harassment Case",
+    "status": "under-review",
+    "priority": "high",
+    "submissionDate": "2024-01-15T14:30:00Z",
+    "lastUpdated": "2024-01-20T09:15:00Z",
+    "description": "Ongoing threats and harassment through social media platforms",
+    "evidence": [
+      {
+        "id": "EVD-001",
+        "filename": "threatening_message_screenshot.png",
+        "type": "screenshot",
+        "uploadDate": "2024-01-15T14:30:00Z",
+        "description": "Screenshot of threatening DM on Instagram"
+      },
+      {
+        "id": "EVD-002",
+        "filename": "voice_threat_recording.mp3",
+        "type": "audio",
+        "uploadDate": "2024-01-15T14:35:00Z",
+        "description": "Voice message with explicit threats"
+      },
+      {
+        "id": "EVD-003",
+        "filename": "chat_conversation_backup.pdf",
+        "type": "document",
+        "uploadDate": "2024-01-16T10:20:00Z",
+        "description": "Full conversation thread exported from WhatsApp"
+      }
+    ],
+    "caseOfficer": "Detective Sarah Johnson",
+    "nextSteps": "Evidence review in progress. Victim will be contacted within 48 hours for follow-up interview.",
+    "supportResources": [
+      "Crisis counseling scheduled for Jan 22",
+      "Safety planning completed",
+      "Legal aid referral provided"
+    ]
+  },
+  {
+    "id": "RPT-2024-002",
+    "title": "Workplace Stalking Incident",
+    "status": "investigation",
+    "priority": "medium", 
+    "submissionDate": "2024-01-18T16:45:00Z",
+    "lastUpdated": "2024-01-22T11:30:00Z",
+    "description": "Repeated unwanted contact and surveillance at workplace",
+    "evidence": [
+      {
+        "id": "EVD-004",
+        "filename": "security_camera_footage.mp4",
+        "type": "video",
+        "uploadDate": "2024-01-18T16:50:00Z",
+        "description": "CCTV footage showing stalking behavior in parking lot"
+      },
+      {
+        "id": "EVD-005",
+        "filename": "email_harassment_log.pdf",
+        "type": "document",
+        "uploadDate": "2024-01-19T08:15:00Z",
+        "description": "Email log showing pattern of unwanted communications"
+      }
+    ],
+    "caseOfficer": "Detective Mike Chen",
+    "nextSteps": "Interviewing workplace security personnel. Restraining order documentation in progress.",
+    "supportResources": [
+      "Victim advocate assigned",
+      "Workplace safety measures implemented",
+      "Support group referral provided"
+    ]
+  }
+]
