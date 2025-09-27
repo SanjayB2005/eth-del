@@ -83,15 +83,14 @@ class PinataService {
         metadata: pinataMetadata
       });
 
-      // Log the actual response to understand the structure
-      console.log('Raw upload result:', uploadResult);
+
 
       return {
-        pinataCid: uploadResult.IpfsHash || uploadResult.cid || uploadResult.hash,
-        pinSize: uploadResult.PinSize || uploadResult.size,
-        timestamp: uploadResult.Timestamp || uploadResult.timestamp || new Date().toISOString(),
+        pinataCid: uploadResult.cid,
+        pinSize: uploadResult.size,
+        timestamp: uploadResult.created_at,
         fileHash,
-        isDuplicate: uploadResult.isDuplicate || false
+        isDuplicate: uploadResult.is_duplicate || false
       };
     } catch (error) {
       console.error('Pinata upload failed:', error);
