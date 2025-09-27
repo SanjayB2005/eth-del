@@ -106,13 +106,28 @@ class PinataService {
       // Generate file hash for verification
       const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
       
+      // Sanitize metadata - Pinata only accepts strings or numbers
+      const sanitizedMetadata = {};
+      Object.entries(metadata).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          // Convert to string if it's not already a string or number
+          if (typeof value === 'object' || typeof value === 'boolean') {
+            sanitizedMetadata[key] = JSON.stringify(value);
+          } else if (typeof value === 'number' || typeof value === 'string') {
+            sanitizedMetadata[key] = value;
+          } else {
+            sanitizedMetadata[key] = String(value);
+          }
+        }
+      });
+      
       // Prepare metadata
       const pinataMetadata = {
         name: originalName,
         keyvalues: {
           fileHash,
           uploadedAt: new Date().toISOString(),
-          ...metadata
+          ...sanitizedMetadata
         }
       };
 
@@ -169,7 +184,7 @@ class PinataService {
         }
       };
 
-      const uploadResult = await this.pinata.upload
+      const uploadResult = await this.uploadPinata.upload
         .json(jsonData)
         .addMetadata(pinataMetadata);
 
@@ -224,7 +239,7 @@ class PinataService {
     }
 
     try {
-      const files = await this.pinata.listFiles()
+      const files = await this.downloadPinata.listFiles()
         .cid(pinataCid)
         .limit(1);
       
@@ -248,7 +263,7 @@ class PinataService {
     }
 
     try {
-      await this.pinata.unpin([pinataCid]);
+      await this.uploadPinata.unpin([pinataCid]);
       console.log(`Successfully unpinned file: ${pinataCid}`);
       return true;
     } catch (error) {
@@ -266,7 +281,7 @@ class PinataService {
     }
 
     try {
-      let query = this.pinata.listFiles();
+      let query = this.downloadPinata.listFiles();
       
       if (options.limit) {
         query = query.limit(options.limit);
@@ -299,7 +314,7 @@ class PinataService {
     }
 
     try {
-      const usage = await this.pinata.usage();
+      const usage = await this.downloadPinata.usage();
       return usage;
     } catch (error) {
       console.error('Failed to get usage stats:', error);

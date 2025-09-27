@@ -83,7 +83,8 @@ router.post('/',
         
         const pinataMetadata = {
           walletAddress: req.user.walletAddress,
-          uploadedAt: new Date().toISOString(),
+          fileSize: size.toString(),
+          mimeType: mimetype,
           ...parsedMetadata
         };
         
