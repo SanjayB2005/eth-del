@@ -18,14 +18,19 @@ import authService from './services/authService.js';
 import authRoutes from './routes/auth.js';
 import uploadRoutes from './routes/upload.js';
 import statusRoutes from './routes/status.js';
+import walletRoutes from './routes/wallet.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002'
+  ],
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -83,6 +88,7 @@ async function initializeServices() {
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/status', statusRoutes);
+app.use('/api/wallet', walletRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -129,19 +135,17 @@ async function startServer() {
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully...');
   await filecoinService.cleanup();
-  mongoose.connection.close(() => {
-    console.log('MongoDB connection closed');
-    process.exit(0);
-  });
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully...');
   await filecoinService.cleanup();
-  mongoose.connection.close(() => {
-    console.log('MongoDB connection closed');
-    process.exit(0);
-  });
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  process.exit(0);
 });
 
 startServer();

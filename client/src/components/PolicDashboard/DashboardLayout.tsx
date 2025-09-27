@@ -1,12 +1,19 @@
 'use client'
 
 import React from 'react'
+import { useAuth } from '@/hooks/useAuth'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { user, logout } = useAuth();
+
+  const getShortAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Top Navigation */}
@@ -43,19 +50,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </svg>
               <span className="text-sm font-medium">Export</span>
             </button>
+            {user && (
+              <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm font-mono text-gray-700">
+                  {getShortAddress(user.walletAddress)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">DJ</span>
+                  <span className="text-white text-sm font-medium">
+                    {user?.role === 'police' ? 'P' : 'U'}
+                  </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Det. Johnson</p>
-                  <p className="text-xs text-gray-500">Badge #4521</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user?.role === 'police' ? 'Police Officer' : 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500">Role: {user?.role}</p>
                 </div>
               </div>
-              <button className="text-gray-400 hover:text-gray-600 transition-colors">
+              <button 
+                onClick={logout}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </button>
             </div>

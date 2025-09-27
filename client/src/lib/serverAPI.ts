@@ -71,33 +71,56 @@ export interface FileStatusResponse {
 class ServerAPI {
   private baseUrl: string;
   private token: string | null = null;
+  private readonly TOKEN_KEY = 'eth_del_auth_token';
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001';
+    this.baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3002';
+    // Initialize token from localStorage on startup
+    this.initializeToken();
+  }
+
+  private initializeToken() {
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem(this.TOKEN_KEY);
+      if (storedToken) {
+        console.log('🔄 Initializing token from localStorage');
+        this.token = storedToken;
+      }
+    }
   }
 
   setToken(token: string) {
+    console.log('🔑 Setting authentication token:', !!token);
     this.token = token;
+    // Persist token to localStorage for persistence across refreshes
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem(this.TOKEN_KEY, token);
     }
   }
 
   getToken(): string | null {
-    if (this.token) return this.token;
-    
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
+    // If token is not in memory, try to get it from localStorage
+    if (!this.token && typeof window !== 'undefined') {
+      this.token = localStorage.getItem(this.TOKEN_KEY);
     }
-    
-    return null;
+    console.log('🔍 Getting token, exists:', !!this.token, 'length:', this.token?.length);
+    return this.token;
   }
 
   clearToken() {
+    console.log('🧹 Clearing authentication token');
     this.token = null;
+    // Clear from localStorage as well
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem(this.TOKEN_KEY);
     }
+  }
+
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    const hasToken = !!this.token;
+    console.log('🔒 Authentication check - has token:', hasToken);
+    return hasToken;
   }
 
   private async fetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
@@ -111,6 +134,9 @@ class ServerAPI {
     
     if (token && !headers.Authorization) {
       headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Adding Authorization header with token to request:', endpoint);
+    } else if (!token) {
+      console.warn('⚠️ No token available for authenticated request to:', endpoint);
     }
     
     const response = await fetch(url, {
@@ -121,10 +147,7 @@ class ServerAPI {
     // Handle auth errors
     if (response.status === 401 || response.status === 403) {
       this.clearToken();
-      // Optionally redirect to login
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth';
-      }
+      // Don't redirect - let the component handle the authentication state
     }
     
     return response;
@@ -173,18 +196,48 @@ class ServerAPI {
     return response.json();
   }
 
+  // Simple wallet connectivity check without token requirement
+  async checkWalletConnectivity(walletAddress: string): Promise<{ 
+    connected: boolean; 
+    user?: AuthResponse['user'];
+    needsAuthentication?: boolean;
+    message?: string;
+  }> {
+    const response = await fetch(`${this.baseUrl}/api/wallet/check/${walletAddress}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      return { connected: false, needsAuthentication: true };
+    }
+    
+    const result = await response.json();
+    return result;
+  }
+
   // File upload methods
   async uploadFile(file: File, metadata: Record<string, any> = {}): Promise<FileUploadResponse> {
+    // Check if we have a token before making the request
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Authentication required. Please connect your wallet first.');
+    }
+    
     const formData = new FormData();
     formData.append('file', file);
     formData.append('metadata', JSON.stringify(metadata));
     
-    const token = this.getToken();
+    // Use direct fetch for FormData uploads
     const headers: Record<string, string> = {};
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    // Don't set Content-Type for FormData - let browser set it with boundary
     
+    console.log('📤 Making uploadFile request with token:', !!token);
     const response = await fetch(`${this.baseUrl}/api/upload`, {
       method: 'POST',
       headers,
@@ -214,11 +267,18 @@ class ServerAPI {
       pages: number;
     };
   }> {
+    // Check if we have a token before making the request
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Authentication required. Please connect your wallet first.');
+    }
+    
     const params = new URLSearchParams();
     Object.entries(options).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());
     });
     
+    console.log('🔍 Making getFiles request with token:', !!token);
     const response = await this.fetch(`/api/upload/files?${params}`);
     if (!response.ok) {
       const error = await response.json();

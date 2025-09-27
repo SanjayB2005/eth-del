@@ -1,63 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/hooks/useAuth';
+import WalletConnectionGuide from '@/components/WalletConnectionGuide';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 export default function Home() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+
+
+  const { primaryWallet, user } = useDynamicContext();
+  const router = useRouter();
+  const isAuthenticated = !!primaryWallet;
+
+
+  // Redirect to dashboard if already authenticated (only from root page)
+  useEffect(() => {
+    if (isAuthenticated && user && typeof window !== 'undefined') {
+      // Only redirect if we're exactly on the root path
+      router.push('/reports');
+    }
+  }, [isAuthenticated, user, router]);
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header / Navbar */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <span className="text-2xl font-bold text-gray-900">SafeGuard</span>
-            </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#about" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">About</a>
-              <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">How it Works</a>
-              <a href="#help" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">Help</a>
-              <button className="bg-lime-400 text-gray-900 px-6 py-2 rounded-lg font-medium hover:bg-lime-300 transition-all">
-                Connect Wallet
-              </button>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden pb-4 border-t border-gray-100">
-              <div className="flex flex-col space-y-4 pt-4">
-                <a href="#about" className="text-gray-600 hover:text-gray-900">About</a>
-                <a href="#how-it-works" className="text-gray-600 hover:text-gray-900">How it Works</a>
-                <a href="#help" className="text-gray-600 hover:text-gray-900">Help</a>
-                <button className="bg-lime-400 text-gray-900 px-6 py-2 rounded-lg font-medium hover:bg-lime-300 transition-all w-full">
-                  Connect Wallet
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,14 +38,8 @@ export default function Home() {
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
             Log incidents, get AI legal help, and connect with trusted NGOs – all securely & privately.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-lime-400 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-lime-300 transition-all shadow-sm">
-              Login with World App Wallet
-            </button>
-            <button className="border border-gray-300 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all">
-              Get Started Anonymously
-            </button>
-          </div>
+
+
         </section>
 
         {/* Key Features */}
@@ -136,7 +99,7 @@ export default function Home() {
               Your data is encrypted. No names, no emails, no tracking.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-lime-400 rounded-xl flex items-center justify-center mx-auto mb-6">
@@ -173,7 +136,7 @@ export default function Home() {
         {/* How It Works */}
         <section id="how-it-works" className="py-20">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">How SafeGuard Works</h2>
-          
+
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="flex flex-col md:flex-row items-center space-y-8 md:space-y-0 md:space-x-8">

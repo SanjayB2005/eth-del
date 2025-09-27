@@ -3,10 +3,45 @@
 import VictimLayout from '@/components/VictimDashboard/VictimLayout'
 import ServerEvidenceUpload from '@/components/VictimDashboard/ServerEvidenceUpload'
 import ServerFileManager from '@/components/VictimDashboard/ServerFileManager'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 export default function StoragePage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  // const { isAuthenticated, isLoading, isInitialized, user } = useAuth();
+  const {user, primaryWallet} = useDynamicContext();
+  const router = useRouter();
+  const isAuthenticated = !!primaryWallet;
+
+  // Redirect to home if not authenticated after proper initialization
+  useEffect(() => {
+    const checkAuth = async () => {
+      // console.log('Storage page auth check:', { 
+      //   isLoading, 
+      //   isInitialized, 
+      //   isAuthenticated, 
+      //   hasUser: !!user 
+      // });
+      
+      // Wait for complete auth initialization (both loading and wallet checks)
+      // if (isLoading || !isInitialized) {
+      //   console.log('Still initializing authentication...');
+      //   return;
+      // }
+      
+      // Only redirect if definitively not authenticated after full initialization
+      if (!isAuthenticated && !user) {
+        console.log('Not authenticated after full initialization, redirecting to home');
+        router.push('/');
+      } else if (isAuthenticated && user) {
+        console.log('✅ User is authenticated:', primaryWallet.address);
+      }
+    };
+    
+    checkAuth();
+  }, [isAuthenticated, router, user]);
 
   const handleUploadComplete = (result: any) => {
     console.log('Upload completed:', result);
@@ -17,6 +52,19 @@ export default function StoragePage() {
   const handleUploadError = (error: string) => {
     console.error('Upload error:', error);
   };
+
+  // Show loading state while authentication is initializing
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <VictimLayout>

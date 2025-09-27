@@ -75,6 +75,7 @@ export default function ServerFileManager({ reportId, caseId }: ServerFileManage
   };
 
   if (!isAuthenticated) {
+    console.log('User not authenticated, cannot display files: ', { isAuthenticated });
     return (
       <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
         <h3 className="text-lg font-semibold text-yellow-800 mb-2">Authentication Required</h3>
