@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Give MetaMask time to initialize
         await new Promise(resolve => setTimeout(resolve, 200));
         
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
         
         if (accounts && accounts.length > 0) {
           const walletAddress = accounts[0];
@@ -247,7 +247,7 @@ export const useWalletAuth = () => {
       // Request account access
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
-      });
+      }) as string[];
       
       console.log('👤 Got accounts for auth:', accounts?.length || 0);
       
@@ -268,7 +268,7 @@ export const useWalletAuth = () => {
         const signature = await window.ethereum.request({
           method: 'personal_sign',
           params: [message, walletAddress],
-        });
+        }) as string;
         console.log('✅ Message signed successfully');
         return signature;
       };
@@ -354,17 +354,4 @@ export const useWalletAuthIntegration = () => {
   };
 };
 
-// Extend Window type for TypeScript
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: any[] }) => Promise<any>;
-      on: (event: string, callback: (...args: any[]) => void) => void;
-      removeListener: (event: string, callback: (...args: any[]) => void) => void;
-      isMetaMask?: boolean;
-      _metamask?: any;
-      isConnected?: () => Promise<boolean>;
-      chainId?: string;
-    };
-  }
-}
+// Removed duplicate Window interface declaration - now using types/ethereum.d.ts

@@ -24,7 +24,7 @@ export const useWallet = () => {
     return typeof window !== 'undefined' && 
            typeof window.ethereum !== 'undefined' &&
            typeof window.ethereum.request === 'function' &&
-           (window.ethereum.isMetaMask === true || window.ethereum._metamask);
+           (window.ethereum.isMetaMask === true || (window.ethereum as any)._metamask);
   };
 
   // Check if already connected on component mount
@@ -42,7 +42,7 @@ export const useWallet = () => {
         // Small delay to ensure MetaMask is fully loaded
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        const accounts = await window.ethereum!.request({ method: 'eth_accounts' });
+        const accounts = await window.ethereum!.request({ method: 'eth_accounts' }) as string[];
         if (accounts && accounts.length > 0) {
           console.log('✅ Found existing wallet connection:', accounts[0].substring(0, 6) + '...');
           setWallet({
@@ -140,7 +140,7 @@ export const useWallet = () => {
       // Request account access
       const accounts = await window.ethereum!.request({
         method: 'eth_requestAccounts',
-      });
+      }) as string[];
       
       WalletDebugger.logConnectionAttempt('eth_requestAccounts completed', true);
       console.log('📋 Received accounts:', accounts?.length || 0);
