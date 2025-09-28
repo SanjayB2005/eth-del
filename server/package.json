@@ -13,6 +13,13 @@
     "test-hedera": "node test-hedera.js",
     "test-hcs": "node test-hcs.js",
     "test-mirror": "node test-mirror-node.js",
+    "test-gemini": "node test-gemini-hedera.js",
+    "chatbot": "node chatbot-server.js",
+    "test-chatbot": "node test-chatbot.js",
+    "session-logging": "node session-logging-server.js",
+    "test-session-logging": "node test-session-logging.js",
+    "demo-case-report": "node demo-case-report-logging.js",
+    "test-frontend": "node test-frontend-integration.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
