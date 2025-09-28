@@ -181,28 +181,33 @@ export default function ServerEvidenceUpload({
 
         {/* File Upload Area */}
         <div
-          className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
             dragActive
               ? 'border-blue-400 bg-blue-50'
               : isUploading
-              ? 'border-gray-300 bg-gray-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
+          onClick={() => {
+            if (!isUploading && fileInputRef.current) {
+              fileInputRef.current.click();
+            }
+          }}
         >
           <input
             ref={fileInputRef}
             type="file"
             onChange={(e) => handleFileSelect(e.target.files)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="sr-only"
             disabled={isUploading}
             accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.txt,.mp4,.avi,.mov,.mp3,.wav"
           />
           
-          <div className="space-y-2">
+          <div className="space-y-2 pointer-events-none">
             <div className="text-4xl">📁</div>
             <div className="text-lg font-medium text-gray-900">
               {isUploading ? 'Uploading...' : 'Drop files here or click to browse'}

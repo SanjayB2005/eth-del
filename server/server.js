@@ -12,6 +12,7 @@ dotenv.config();
 // Import services
 import pinataService from './services/pinataService.js';
 import filecoinService from './services/filecoinService.js';
+import polygonService from './services/polygonService.js';
 import authService from './services/authService.js';
 
 // Import routes
@@ -83,6 +84,14 @@ async function initializeServices() {
       console.log('✅ Filecoin service initialized');
     } else {
       console.log('⚠️  Filecoin service disabled (check configuration)');
+    }
+    
+    // Initialize Polygon service
+    try {
+      await polygonService.initialize();
+      console.log('✅ Polygon service initialized');
+    } catch (error) {
+      console.log('⚠️  Polygon service disabled:', error.message);
     }
     
   } catch (error) {

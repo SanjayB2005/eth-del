@@ -9,6 +9,12 @@ interface UploadState {
   pieceCid: string | null;
   dealId: string | null;
   error: string | null;
+  polygonTransaction: {
+    hash: string;
+    blockNumber: number;
+    fileId: string;
+    explorerUrl: string;
+  } | null;
 }
 
 const SimpleFilecoinUpload: React.FC = () => {
@@ -18,7 +24,8 @@ const SimpleFilecoinUpload: React.FC = () => {
     pinataCid: null,
     pieceCid: null,
     dealId: null,
-    error: null
+    error: null,
+    polygonTransaction: null
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -179,7 +186,8 @@ const SimpleFilecoinUpload: React.FC = () => {
         ...prev, 
         step: 'success',
         pieceCid: storageResult.uploadResult?.pieceCid,
-        dealId: storageResult.uploadResult?.dealId
+        dealId: storageResult.uploadResult?.dealId,
+        polygonTransaction: storageResult.uploadResult?.polygonTransaction || null
       }));
       
     } catch (error) {
@@ -208,7 +216,8 @@ const SimpleFilecoinUpload: React.FC = () => {
       pinataCid: null,
       pieceCid: null,
       dealId: null,
-      error: null
+      error: null,
+      polygonTransaction: null
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -335,6 +344,26 @@ const SimpleFilecoinUpload: React.FC = () => {
                 <strong className="text-green-700">Deal ID:</strong>
                 <p className="text-green-600 font-mono">{uploadState.dealId}</p>
               </div>
+              
+              {uploadState.polygonTransaction && (
+                <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <h4 className="text-purple-800 font-semibold mb-2">🔗 Polygon Blockchain Record</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong className="text-purple-700">Transaction Hash:</strong></p>
+                    <p className="text-purple-600 font-mono break-all">{uploadState.polygonTransaction.hash}</p>
+                    <p><strong className="text-purple-700">Block Number:</strong> {uploadState.polygonTransaction.blockNumber}</p>
+                    <p><strong className="text-purple-700">File ID:</strong> {uploadState.polygonTransaction.fileId}</p>
+                    <a 
+                      href={uploadState.polygonTransaction.explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-500 hover:text-purple-700 underline"
+                    >
+                      View on Polygon Explorer →
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="mt-4 space-x-2">
@@ -386,7 +415,8 @@ const SimpleFilecoinUpload: React.FC = () => {
           <li>1. Upload file to Pinata (IPFS)</li>
           <li>2. Pay 0.001 tFIL with MetaMask</li>
           <li>3. File gets stored on Filecoin network</li>
-          <li>4. You get Piece CID and Deal ID</li>
+          <li>4. Data gets recorded on Polygon blockchain</li>
+          <li>5. You get Piece CID, Deal ID, and Polygon TX hash</li>
         </ol>
         
         <div className="mt-3 text-sm">

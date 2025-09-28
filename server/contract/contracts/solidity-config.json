@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "paris",
+    "libraries": {}
+  },
+  "sources": {
+    "contracts/SafeGuardEvidence.sol": {
+      "content": "// Auto-generated - will be replaced with actual contract content"
+    },
+    "@openzeppelin/contracts/access/Ownable.sol": {
+      "content": "// OpenZeppelin Ownable contract"
+    },
+    "@openzeppelin/contracts/utils/ReentrancyGuard.sol": {
+      "content": "// OpenZeppelin ReentrancyGuard contract"  
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": ["*"]
+      }
+    }
+  }
+}

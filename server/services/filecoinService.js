@@ -1,6 +1,7 @@
 import { Synapse, RPC_URLS, TOKENS, CONTRACT_ADDRESSES } from '@filoz/synapse-sdk';
 import { ethers } from 'ethers';
 import pinataService from './pinataService.js';
+import polygonService from './polygonService.js';
 import PaymentLog from '../models/PaymentLog.js';
 
 class FilecoinService {
@@ -262,6 +263,25 @@ class FilecoinService {
         // Store the deal information in database
         await this.storeDealInfo(uploadResult, filecoinMetadata, fileBuffer.length);
         
+        // Store data on Polygon blockchain
+        let polygonResult = null;
+        try {
+          console.log('📝 Storing file data on Polygon blockchain...');
+          polygonResult = await polygonService.storeFileData({
+            pinataHash: pinataCid,
+            pieceCid: uploadResult.pieceCid,
+            dealId: uploadResult.dealId,
+            provider: uploadResult.provider,
+            fileSize: fileBuffer.length,
+            fileName: metadata.fileName || 'uploaded-file',
+            fileType: metadata.fileType || 'application/octet-stream'
+          });
+          console.log('✅ Polygon storage successful:', polygonResult.transactionHash);
+        } catch (polygonError) {
+          console.error('⚠️ Polygon storage failed:', polygonError.message);
+          // Continue with Filecoin result even if Polygon fails
+        }
+        
         return {
           pieceCid: uploadResult.pieceCid,
           dealId: uploadResult.dealId,
@@ -272,7 +292,13 @@ class FilecoinService {
           fileSize: fileBuffer.length,
           dealDuration: uploadResult.dealDuration,
           price: uploadResult.price,
-          simulated: false
+          simulated: false,
+          polygonTransaction: polygonResult ? {
+            hash: polygonResult.transactionHash,
+            blockNumber: polygonResult.blockNumber,
+            fileId: polygonResult.fileId,
+            explorerUrl: polygonResult.explorerUrl
+          } : null
         };
         
       } catch (storageError) {

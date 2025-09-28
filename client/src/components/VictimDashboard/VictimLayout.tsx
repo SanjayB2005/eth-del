@@ -21,7 +21,7 @@ export default function VictimLayout({ children }: VictimLayoutProps) {
 
   const handleDebugTest = async () => {
     console.log('🔧 Running authentication debug test...');
-    AuthDebugger.checkTokenStatus();
+    AuthDebugger.checkToken(); // Replace with the correct method name as defined in AuthDebugger
     await AuthDebugger.testAPICall();
   };
 
