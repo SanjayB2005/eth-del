@@ -42,3 +42,11 @@ next-env.d.ts
 
 # archived files
 src/archive/
+
+# Test files
+test-*.html
+*-test.*
+
+# Development only files  
+*.development.*
+*.dev.*
