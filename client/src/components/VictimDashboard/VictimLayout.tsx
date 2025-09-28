@@ -98,6 +98,14 @@ export default function VictimLayout({ children }: VictimLayoutProps) {
                 <span className="ml-auto bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded-full font-medium">2</span>
               </Link>
               
+              <Link href="/payment-setup" className="flex items-center px-4 py-3 text-gray-700 hover:bg-purple-50 rounded-lg transition-colors">
+                <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                <span>Payment Setup</span>
+                <span className="ml-auto bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full font-medium">⚠️</span>
+              </Link>
+              
               <Link href="/pinata-files" className="flex items-center px-4 py-3 text-gray-700 hover:bg-purple-50 rounded-lg transition-colors">
                 <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />

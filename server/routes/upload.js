@@ -163,8 +163,27 @@ async function migrateToFilecoin(fileRecordId) {
     await fileRecord.save();
     
     // Check if Filecoin service is ready
-    if (!filecoinService.isPaymentSetup()) {
-      throw new Error('Filecoin payment setup required');
+    if (!filecoinService.isInitialized()) {
+      throw new Error('Filecoin service not initialized');
+    }
+
+    // Get detailed payment status
+    let paymentStatus;
+    try {
+      paymentStatus = await filecoinService.getPaymentStatus();
+    } catch (statusError) {
+      throw new Error(`Failed to check payment status: ${statusError.message}`);
+    }
+
+    if (!paymentStatus.isSetup) {
+      const errorMessage = `Filecoin payment setup required: ${paymentStatus.message}. Wallet: ${paymentStatus.walletAddress}, Balance: ${paymentStatus.balance.fil} ${paymentStatus.balance.token}, Required: ${paymentStatus.balance.minRequired} ${paymentStatus.balance.token}`;
+      
+      // If it's a balance issue, provide helpful information
+      if (paymentStatus.faucetUrl) {
+        throw new Error(`${errorMessage}. Get test tokens from: ${paymentStatus.faucetUrl}`);
+      }
+      
+      throw new Error(errorMessage);
     }
     
     // Upload to Filecoin

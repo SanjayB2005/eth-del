@@ -1,5 +1,5 @@
 "use client";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -12,17 +12,58 @@ import { createConfig } from "wagmi";
 import { sepolia } from "viem/chains";
 import { AuthProvider } from "@/hooks/useAuth";
 
+// Define Filecoin Calibration testnet chain
+const filecoinCalibration = {
+  id: 314159,
+  name: 'Filecoin Calibration',
+  network: 'filecoin-calibration',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Testnet Filecoin',
+    symbol: 'tFIL',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://api.calibration.node.glif.io/rpc/v1'],
+      webSocket: ['wss://wss.calibration.node.glif.io/apigw/lotus/rpc/v1'],
+    },
+    public: {
+      http: ['https://api.calibration.node.glif.io/rpc/v1'],
+      webSocket: ['wss://wss.calibration.node.glif.io/apigw/lotus/rpc/v1'],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'Filfox', url: 'https://calibration.filfox.info' },
+  },
+  testnet: true,
+} as const;
+
+// Create HTTP transport with retry logic
+const createHttpTransport = (url: string) => {
+  return http(url, {
+    batch: {
+      batchSize: 1024,
+      wait: 16,
+    },
+    retryCount: 3,
+  });
+};
+
 const NavContent = () => {
   const { primaryWallet, user } = useDynamicContext();
-  const router  = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
-   useEffect(() => {
+  useEffect(() => {
     const handleWalletConnection = async () => {
-      if (primaryWallet && user && pathname === '/') {
-        const walletAddress = primaryWallet.address;
-
-        router.push('/reports');
+      try {
+        if (primaryWallet && user && pathname === '/') {
+          const walletAddress = primaryWallet.address;
+          console.log('🔗 Wallet connected:', walletAddress.substring(0, 6) + '...');
+          router.push('/reports');
+        }
+      } catch (error) {
+        console.error('❌ Error handling wallet connection:', error);
       }
     };
 
@@ -51,26 +92,103 @@ const NavContent = () => {
 };
 
 const ClientWrapper = ({ children }: { children: ReactNode }) => {
+  const [hasError, setHasError] = useState(false);
 
   const config = createConfig({
-  chains: [sepolia],
-  multiInjectedProviderDiscovery: false,
-  transports: {
-    [sepolia.id]: http(),
-  },
-});
-const queryClient = new QueryClient();
+    chains: [sepolia, filecoinCalibration],
+    multiInjectedProviderDiscovery: false,
+    transports: {
+      [sepolia.id]: createHttpTransport('https://ethereum-sepolia.publicnode.com'),
+      [filecoinCalibration.id]: createHttpTransport('https://api.calibration.node.glif.io/rpc/v1'),
+    },
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: (failureCount, error) => {
+          // Don't retry RPC errors
+          if (error instanceof Error && error.message.includes('HTTP request failed')) {
+            return false;
+          }
+          return failureCount < 3;
+        },
+      },
+    },
+  });
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (event.error?.message?.includes('HTTP request failed') || 
+          event.error?.message?.includes('fetch failed')) {
+        console.warn('🔧 RPC connection issue detected, continuing with limited functionality');
+        setHasError(true);
+        // Don't let this crash the app
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
 
   return (
     <DynamicContextProvider
       settings={{
         environmentId: "33eedafd-f5f1-4a2b-942e-21a41512f381",
         walletConnectors: [EthereumWalletConnectors],
+        initialAuthenticationMode: 'connect-only',
+        // Add network configurations
+        overrides: {
+          evmNetworks: [
+            {
+              blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+              chainId: 11155111,
+              chainName: 'Sepolia',
+              iconUrls: ['https://app.dynamic.xyz/assets/networks/eth.svg'],
+              name: 'Sepolia',
+              nativeCurrency: {
+                decimals: 18,
+                name: 'Ether',
+                symbol: 'ETH',
+              },
+              networkId: 11155111,
+              rpcUrls: ['https://ethereum-sepolia.publicnode.com'],
+              vanityName: 'Sepolia Testnet',
+            },
+            {
+              blockExplorerUrls: ['https://calibration.filfox.info/'],
+              chainId: 314159,
+              chainName: 'Filecoin Calibration',
+              iconUrls: ['https://cryptologos.cc/logos/filecoin-fil-logo.svg'],
+              name: 'Filecoin Calibration Testnet',
+              nativeCurrency: {
+                decimals: 18,
+                name: 'Testnet Filecoin',
+                symbol: 'tFIL',
+              },
+              networkId: 314159,
+              rpcUrls: [
+                'https://api.calibration.node.glif.io/rpc/v1',
+                'https://rpc.ankr.com/filecoin_testnet',
+                'https://filecoin-calibration.chainstacklabs.com/rpc/v1'
+              ],
+              vanityName: 'Filecoin Calibration',
+            },
+          ],
+        },
       }}
     >
       {/* <AuthProvider> */}
 
       <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        {hasError && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-lg">
+            <p className="text-sm">
+              ⚠️ Network connectivity issues detected. Some features may be limited.
+            </p>
+          </div>
+        )}
         <NavContent />
         <main className="pt-16" style={{ backgroundImage: 'radial-gradient(#e5e5e5 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
           {children}

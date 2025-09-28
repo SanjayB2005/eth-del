@@ -19,6 +19,8 @@ import authRoutes from './routes/auth.js';
 import uploadRoutes from './routes/upload.js';
 import statusRoutes from './routes/status.js';
 import walletRoutes from './routes/wallet.js';
+import filecoinRoutes from './routes/filecoin.js';
+import metamaskRoutes from './routes/metamask.js';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -94,6 +96,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/filecoin', filecoinRoutes);
+app.use('/api/metamask', metamaskRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

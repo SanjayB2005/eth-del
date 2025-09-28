@@ -33,19 +33,40 @@ class PinataService {
           pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud'
         });
 
-        // Test both connections
-        await this.testUploadConnection();
-        await this.testDownloadConnection();
+        // Test both connections with fallback
+        try {
+          await this.testUploadConnection();
+          await this.testDownloadConnection();
+        } catch (testError) {
+          console.warn('⚠️  Pinata authentication test failed, but continuing with initialization:', testError.message);
+          console.warn('⚠️  Service will attempt to work but may have limited functionality');
+        }
+        
+      } else if (uploadJwt) {
+        // Use single JWT configuration (upload JWT only)
+        console.log('🔑 Using single JWT Pinata configuration');
+        
+        this.uploadPinata = new PinataSDK({
+          pinataJwt: uploadJwt,
+          pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud'
+        });
+        this.downloadPinata = this.uploadPinata; // Same client for both
+
+        // Test the connection with fallback
+        try {
+          await this.testUploadConnection();
+        } catch (testError) {
+          console.warn('⚠️  Pinata authentication test failed, but continuing with initialization:', testError.message);
+          console.warn('⚠️  Service will attempt to work but may have limited functionality');
+        }
         
       } else {
         // Fallback to legacy single key configuration
         console.log('🔑 Using legacy single-key Pinata configuration');
-        const apiKey = process.env.PINATA_API_KEY;
-        const secretKey = process.env.PINATA_SECRET_KEY;
         const jwt = process.env.PINATA_JWT;
 
-        if (!apiKey || !secretKey || !jwt) {
-          throw new Error('Missing Pinata credentials. Please set either dual keys (PINATA_UPLOAD_JWT, PINATA_DOWNLOAD_JWT) or legacy keys (PINATA_API_KEY, PINATA_SECRET_KEY, PINATA_JWT).');
+        if (!jwt) {
+          throw new Error('Missing Pinata credentials. Please set either PINATA_UPLOAD_JWT or PINATA_JWT in your environment variables.');
         }
 
         // Initialize single client for both operations
@@ -55,8 +76,13 @@ class PinataService {
         });
         this.downloadPinata = this.uploadPinata; // Same client for both
 
-        // Test the connection
-        await this.testUploadConnection();
+        // Test the connection with fallback
+        try {
+          await this.testUploadConnection();
+        } catch (testError) {
+          console.warn('⚠️  Pinata authentication test failed, but continuing with initialization:', testError.message);
+          console.warn('⚠️  Service will attempt to work but may have limited functionality');
+        }
       }
       
       this.initialized = true;
@@ -69,10 +95,47 @@ class PinataService {
 
   async testUploadConnection() {
     try {
-      const testData = await this.uploadPinata.testAuthentication();
-      console.log('Pinata upload authentication test passed:', testData.authenticated);
-      return testData.authenticated;
+      // Test with direct API call instead of SDK method
+      const uploadJwt = process.env.PINATA_UPLOAD_JWT;
+      if (!uploadJwt) {
+        throw new Error('PINATA_UPLOAD_JWT not found in environment variables');
+      }
+
+      console.log('🔍 Testing Pinata upload authentication...');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch('https://api.pinata.cloud/data/testAuthentication', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${uploadJwt}`,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Upload auth test failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+        throw new Error(`Authentication failed: ${response.status} - ${errorText}`);
+      }
+
+      const testData = await response.json();
+      console.log('✅ Pinata upload authentication test passed:', testData.message || testData);
+      return true;
     } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('❌ Upload authentication test timed out');
+        throw new Error('Pinata upload connection test timed out');
+      }
+      console.error('❌ Upload authentication test error:', error);
       throw new Error(`Pinata upload connection test failed: ${error.message}`);
     }
   }
@@ -80,12 +143,32 @@ class PinataService {
   async testDownloadConnection() {
     try {
       if (this.downloadPinata !== this.uploadPinata) {
-        const testData = await this.downloadPinata.testAuthentication();
-        console.log('Pinata download authentication test passed:', testData.authenticated);
-        return testData.authenticated;
+        // Test with direct API call instead of SDK method
+        const downloadJwt = process.env.PINATA_DOWNLOAD_JWT;
+        if (!downloadJwt) {
+          throw new Error('PINATA_DOWNLOAD_JWT not found in environment variables');
+        }
+
+        const response = await fetch('https://api.pinata.cloud/data/testAuthentication', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${downloadJwt}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Authentication failed: ${response.status} - ${errorText}`);
+        }
+
+        const testData = await response.json();
+        console.log('Pinata download authentication test passed:', testData.message);
+        return true;
       }
       return true; // Same client, already tested
     } catch (error) {
+      console.error('Download authentication test error:', error);
       throw new Error(`Pinata download connection test failed: ${error.message}`);
     }
   }

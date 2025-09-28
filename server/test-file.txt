@@ -1,0 +1,6 @@
+Test File Content:
+This is a real test file for Filecoin storage verification.
+Timestamp: Sun Sep 28 04:57:04 IST 2025
+Wallet: 0xB70C8Fc04118C415Fa48CF492Cb5130242f19E89
+Purpose: Verify real Filecoin storage (not simulation)
+Test ID: bed88679

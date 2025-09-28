@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import WalletConnectionGuide from '@/components/WalletConnectionGuide';
+import SimpleFilecoinUpload from '@/components/SimpleFilecoinUpload';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { QueryClient } from '@tanstack/react-query';
 
@@ -10,15 +11,32 @@ export default function Home() {
   const { primaryWallet, user } = useDynamicContext();
   const router = useRouter();
   const isAuthenticated = !!primaryWallet;
-
+  const [showFilecoinDemo, setShowFilecoinDemo] = useState(false);
 
   // Redirect to dashboard if already authenticated (only from root page)
   useEffect(() => {
-    if (isAuthenticated && user && typeof window !== 'undefined') {
-      // Only redirect if we're exactly on the root path
+    if (isAuthenticated && user && typeof window !== 'undefined' && !showFilecoinDemo) {
+      // Only redirect if we're exactly on the root path and not showing demo
       router.push('/reports');
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, showFilecoinDemo]);
+
+  // Show Filecoin demo if requested
+  if (showFilecoinDemo) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <button
+            onClick={() => setShowFilecoinDemo(false)}
+            className="mb-6 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            ← Back to Home
+          </button>
+          <SimpleFilecoinUpload />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -185,9 +203,17 @@ export default function Home() {
         <section className="py-20 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">Take control today.</h2>
           <p className="text-2xl text-gray-600 mb-12">You're not alone.</p>
-          <button className="bg-lime-400 text-gray-900 px-12 py-4 rounded-lg text-xl font-semibold hover:bg-lime-300 transition-all shadow-sm">
-            Start Now
-          </button>
+          <div className="space-x-4">
+            <button className="bg-lime-400 text-gray-900 px-12 py-4 rounded-lg text-xl font-semibold hover:bg-lime-300 transition-all shadow-sm">
+              Start Now
+            </button>
+            <button 
+              onClick={() => setShowFilecoinDemo(true)}
+              className="bg-purple-500 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-purple-600 transition-all shadow-sm"
+            >
+              🗄️ Try Filecoin Storage
+            </button>
+          </div>
         </section>
       </main>
 
