@@ -263,23 +263,19 @@ class FilecoinService {
         // Store the deal information in database
         await this.storeDealInfo(uploadResult, filecoinMetadata, fileBuffer.length);
         
-        // Store data on Polygon blockchain
+        // Store Pinata CID on Polygon blockchain
         let polygonResult = null;
         try {
-          console.log('📝 Storing file data on Polygon blockchain...');
-          polygonResult = await polygonService.storeFileData({
-            pinataHash: pinataCid,
-            pieceCid: uploadResult.pieceCid,
-            dealId: uploadResult.dealId,
-            provider: uploadResult.provider,
-            fileSize: fileBuffer.length,
-            fileName: metadata.fileName || 'uploaded-file',
-            fileType: metadata.fileType || 'application/octet-stream'
-          });
-          console.log('✅ Polygon storage successful:', polygonResult.transactionHash);
+            console.log('📝 Storing Pinata CID on Polygon blockchain...');
+            polygonResult = await polygonService.storeFileData({
+                pinataHash: pinataCid,
+                fileSize: fileBuffer.length,
+                fileName: metadata.fileName || 'uploaded-file'
+            });
+            console.log('✅ Polygon storage successful:', polygonResult.transactionHash);
         } catch (polygonError) {
-          console.error('⚠️ Polygon storage failed:', polygonError.message);
-          // Continue with Filecoin result even if Polygon fails
+            console.error('⚠️ Polygon storage failed:', polygonError.message);
+            // Continue with Filecoin result even if Polygon fails
         }
         
         return {
@@ -296,7 +292,7 @@ class FilecoinService {
           polygonTransaction: polygonResult ? {
             hash: polygonResult.transactionHash,
             blockNumber: polygonResult.blockNumber,
-            fileId: polygonResult.fileId,
+            recordId: polygonResult.recordId,
             explorerUrl: polygonResult.explorerUrl
           } : null
         };

@@ -1,0 +1,8 @@
+{
+  "contractAddress": "0x1234567890123456789012345678901234567890",
+  "deployerAddress": "0x6cb0e34FC47836C0F1e090C2aE44C23aef4CD89c",
+  "transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "network": "amoy",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "status": "mock_deployment"
+}

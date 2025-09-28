@@ -1,0 +1,30 @@
+{
+  "name": "filecoin-storage-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for Filecoin storage integration with Polygon",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:amoy": "hardhat run scripts/deploy-simple.js --network amoy",
+    "deploy:local": "hardhat run scripts/deploy-simple.js --network localhost",
+    "verify:amoy": "hardhat verify --network amoy",
+    "clean": "hardhat clean"
+  },
+  "keywords": [
+    "filecoin",
+    "polygon",
+    "ipfs",
+    "blockchain",
+    "storage"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
